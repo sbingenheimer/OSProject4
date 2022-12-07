@@ -2,10 +2,11 @@
 #include "udp.h"
 
 #define BUFFER_SIZE (1000)
+int sd;
 
 // server code
 int main(int argc, char *argv[]) {
-    int sd = UDP_Open(10000);
+    sd = UDP_Open(10000);
     assert(sd > -1);
     while (1) {
 	struct sockaddr_in addr;
@@ -21,4 +22,9 @@ int main(int argc, char *argv[]) {
 	} 
     }
     return 0; 
+}
+
+void intHandler(int dummy) {
+    UDP_Close(sd);
+    exit(130);
 }
