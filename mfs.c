@@ -1,14 +1,35 @@
 #include <stdio.h>
 #include "mfs.h"
 
+#define BUFFER_SIZE (1000);
+int sd;
+int fc;
+struct sockaddr_in addrSnd, addrRcv;
+
+
+//should prob make a send function so we dont have to rewrite every method when sending to and from client and server
+//
+//
+
 int MFS_Init(char *hostname, int port) {
     printf("MFS Init2 %s %d\n", hostname, port);
-    // do some net setup
-    return 0;
+    
+    //Think this is how you initialize???
+    sd = UDP_Open(0);
+    if (sd < 0) {
+        return -1;
+    }
+    fc = UDP_FillSockAddr(addrSnd, hostname, port);
+    if (fc < 0){
+        return -1;
+    }else {
+       return 0;
+    }
 }
 
 int MFS_Lookup(int pinum, char *name) {
     // network communication to do the lookup to server
+
     return 0;
 }
 
