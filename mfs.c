@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "mfs.h"
 
-#define BUFFER_SIZE (1000);
+#define BUFFER_SIZE (4096);
 int sd;
 int fc;
 struct sockaddr_in addrSnd, addrRcv;
