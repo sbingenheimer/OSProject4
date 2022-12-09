@@ -14,7 +14,12 @@
 typedef struct {
     int mtype; // message type from above
     int rc;    // return code
+    char *response; //buffer for any response
     // put more here ...
+    int inum;
+    char * lookupName;
+    MFS_STAT_t *statStruct;
+
 } message_t;
 
 #endif // __message_h__
