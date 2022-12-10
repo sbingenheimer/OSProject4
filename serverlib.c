@@ -3,6 +3,7 @@
 
 #define BUFFER_SIZE (4096)
 int sd;
+message_t touse;
 
 // GET CALLS FROM MFS AND DO OPERATIONS THEN RETURN
 
@@ -20,17 +21,37 @@ void getMSFCommand(){
 	printf("server:: waiting...\n");
 	int rc = UDP_Read(sd, &addr, message, BUFFER_SIZE);
 	printf("server:: read message [size:%d contents:(%s)]\n", rc, message);
+
+    touse = (message_t) message;
+    int resp;
+
+    if (touse->mtype == MFS_Lookup) {
+        resp = lookup(touse);
+    }
+    else if (touse->mtype == MFS_Stat) {
+        resp = stat(touse);
+    }
+    else if (touse->mtype == MFS_Write) {
+        resp = write(touse);
+    }
+    else if (touse->mtype == MFS_Read) {
+        resp = read(touse);
+    }
+    else if (touse->mtype == MFS_Unlink) {
+        resp = unlink(touse);
+    }
+    else if (touse->mtype == MFS_Shutdown) {
+        resp = shutdown(touse);
+    }
+    else {
+        touse->rc = -1;
+    }
     
-    //assuming we do something with the message in here
-    //call which function we want or whatever 
+	
+    rc = UDP_Write(sd, &addr, (char *) &touse, BUFFER_SIZE);
+	printf("server:: reply\n");
 
-
-	if (rc > 0) {
-            char reply[BUFFER_SIZE];
-            sprintf(reply, "goodbye world");
-            rc = UDP_Write(sd, &addr, reply, BUFFER_SIZE);
-	    printf("server:: reply\n");
-	} 
+    
     }
     return 0; 
 
