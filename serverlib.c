@@ -12,6 +12,8 @@
 int sd;
 message_t touse;
 sruct stat buff;
+int port;
+char * imageIn;
 
 // GET CALLS FROM MFS AND DO OPERATIONS THEN RETURN
 
@@ -20,11 +22,15 @@ sruct stat buff;
 // get the command from the incoming message calls cooresponding method
 // in methods, we can update the input message to create a new outgoing message to return
 // gets return value from the method (-1, 0) and returns that value to client
-void getMSFCommand(){
+int main(int argc, char *argv[]) {
 
     //Think we have to make the file image here first then create the socket and wait for messages
 
-    int fd = open(image, O_RDWR);
+
+    port = argv[0];
+    imageIn = argv[1];
+
+    int fd = open(imageIn, O_RDWR);
     if (fd < 0) {
         return -1;
     }
@@ -44,7 +50,7 @@ void getMSFCommand(){
 
    // so here we wait for messages
 
-    sd = UDP_Open(10000); //not sure what to do here exactly. not sure what the port should be 
+    sd = UDP_Open(port); //not sure what to do here exactly. not sure what the port should be 
     assert(sd > -1);
     while (1) {
 	struct sockaddr_in addr;
