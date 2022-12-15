@@ -1,10 +1,13 @@
 #include <stdio.h>
+#include "udp.h"
 #include "mfs.h"
+#include "message.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/select.h>
+#include <string.h>
 
-#define BUFFER_SIZE (4096);
+#define BUFFER_SIZE (4096)
 message_t ret;
 int sd;
 int fc;
@@ -38,7 +41,7 @@ int sendAndRecieve (message_t message){
         }
         else if(selret != 0){
              rc = UDP_Read(sd, &addrRcv, (char*) &ret , BUFFER_SIZE);
-             printf("client:: got reply [size:%d contents:(%s)\n", rc, message);
+             printf("client:: got reply [size:%d contents:(%s)\n", rc, message.response);
              return rc;
         }
         else {
@@ -65,7 +68,7 @@ int MFS_Init(char *hostname, int port) {
     if (sd < 0) {
         return -1;
     }
-    fc = UDP_FillSockAddr(addrSnd, hostname, port);
+    fc = UDP_FillSockAddr(&addrSnd, hostname, port);
     if (fc < 0){
         return -1;
     }else {
@@ -77,8 +80,8 @@ int MFS_Lookup(int pinum, char *name) {
     // network communication to do the lookup to server
 
     message_t message;
-    message.mtype = MFS_Lookup;
-    memcpy(message.lookupName, name, sizeof(char *));
+    message.mtype = "MFS_Lookup";
+    message.lookupName = name;
 
     //send to server
     int rc = sendAndRecieve(message);
@@ -102,7 +105,7 @@ int MFS_Lookup(int pinum, char *name) {
 int MFS_Stat(int inum, MFS_Stat_t *m) {
 
     message_t message;
-    message.mtype = MFS_Stat;
+    message.mtype = "MFS_Stat";
     message.inum = inum;
 
     //send to server
@@ -127,16 +130,17 @@ int MFS_Stat(int inum, MFS_Stat_t *m) {
 
 int MFS_Write(int inum, char *buffer, int offset, int nbytes) {
    
-    if (inum < 0 || offest < 0 || nbytes < 0){
+    if (inum < 0 || offset < 0 || nbytes < 0){
         return -1;
     }
 
     message_t message;
-    message.mtype = MFS_Write;
+    message.mtype = "MFS_Write";
     message.inum = inum;
     message.offset = offset;
     message.nbytes = nbytes;
-    memcpy(message.message, buffer, sizeof(char *));
+    message.message = buffer;
+    //memcpy(message.message, buffer, sizeof(char));
 
     //send to server
     int rc = sendAndRecieve(message);
@@ -159,12 +163,12 @@ int MFS_Write(int inum, char *buffer, int offset, int nbytes) {
 
 int MFS_Read(int inum, char *buffer, int offset, int nbytes) {
 
-    if (inum < 0 || offest < 0 || nbytes < 0){
+    if (inum < 0 || offset < 0 || nbytes < 0){
         return -1;
     }
     
     message_t message;
-    message.mtype = MFS_Read;
+    message.mtype = "MFS_Read";
     message.inum = inum;
     message.offset = offset;
     message.nbytes = nbytes;
@@ -178,7 +182,7 @@ int MFS_Read(int inum, char *buffer, int offset, int nbytes) {
 
         //if -1 lookup failed otherwise return 0 
         if (resp.rc != -1){
-            memcpy(resp.response, buffer, sizeof(char *));
+            memcpy(resp.response, buffer, sizeof(char));
             return 0;
         }
         else {
@@ -192,10 +196,11 @@ int MFS_Read(int inum, char *buffer, int offset, int nbytes) {
 int MFS_Creat(int pinum, int type, char *name) {
 
     message_t message;
-    message.mtype = MFS_Read;
+    message.mtype = "MFS_Read";
     message.inum = pinum;
-    messsage.type = type;
-    memcopy(message.message, name, sizeof(char *));
+    message.type = type;
+    message.message = name;
+    //memcpy(message.message, name, sizeof(char));
 
     //send to server
     int rc = sendAndRecieve(message);
@@ -219,9 +224,10 @@ int MFS_Creat(int pinum, int type, char *name) {
 int MFS_Unlink(int pinum, char *name) {
 
     message_t message;
-    message.mtype = MFS_Unlink;
+    message.mtype = "MFS_Unlink";
     message.inum = pinum;
-    memcopy(message.message, name, sizeof(char *));
+    message.message = name;
+    //memcpy(message.message, name, sizeof(char));
 
     //send to server
     int rc = sendAndRecieve(message);
@@ -246,7 +252,7 @@ int MFS_Unlink(int pinum, char *name) {
 int MFS_Shutdown() {
 
     message_t message;
-    message.mtype = MFS_Shutdown;
+    message.mtype = "MFS_Shutdown";
 
     //send to server
     int rc = sendAndRecieve(message);

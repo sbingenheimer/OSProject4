@@ -7,16 +7,44 @@
 #include <unistd.h>
 #include <assert.h>
 #include "udp.h"
+#include "message.h"
 
 #define BUFFER_SIZE (4096)
 int sd;
 message_t touse;
-sruct stat buff;
-int port;
+struct stat buff;
+long port;
 char * imageIn;
 
 // GET CALLS FROM MFS AND DO OPERATIONS THEN RETURN
 
+
+
+int serverLookup (message_t message, void* image) {
+
+    
+    return 0;
+}
+
+int serverStat (message_t message, void* image) {
+    return 0;
+}
+
+int serverWrite (message_t message, void* image) {
+    return 0;
+}
+
+int serverRead (message_t message, void* image) {
+    return 0;
+}
+
+int serverUnlink (message_t message, void* image) {
+    return 0;
+}
+
+int serverShutdown (message_t message, void* image) {
+    return 0;
+}
 
 // UDP read and write
 // get the command from the incoming message calls cooresponding method
@@ -27,7 +55,9 @@ int main(int argc, char *argv[]) {
     //Think we have to make the file image here first then create the socket and wait for messages
 
 
-    port = argv[0];
+    char* p;
+    port = strtol(argv[0], &p, 10);
+    if (*p != '\0')
     imageIn = argv[1];
 
     int fd = open(imageIn, O_RDWR);
@@ -42,7 +72,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    int image_size = (int) sbuf.st_size;
+    int image_size = (int) buff.st_size;
 
     void *image = mmap(NULL, image_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     assert(image != MAP_FAILED);
@@ -56,7 +86,7 @@ int main(int argc, char *argv[]) {
 	struct sockaddr_in addr;
 	char message[BUFFER_SIZE];
 	printf("server:: waiting...\n");
-	int rc = UDP_Read(sd, &addr, message, BUFFER_SIZE);
+	int rc = UDP_Read(sd, &addr, (char*)&touse, BUFFER_SIZE);
 	printf("server:: read message [size:%d contents:(%s)]\n", rc, message);
 
     int fd = open(image, O_RDWR);
@@ -71,34 +101,39 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    int image_size = (int) sbuf.st_size;
+    int image_size = (int) buff.st_size;
 
     void *image = mmap(NULL, image_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     assert(image != MAP_FAILED);
 
-    touse = (message_t) message;
     int resp;
 
-    if (touse->mtype == MFS_Lookup) {
-        resp = lookup(touse, image);
+    if (strcmp(touse.mtype, "MFS_Lookup")) {
+        resp = serverLookup(touse, image);
+        touse.rc = resp;
     }
-    else if (touse->mtype == MFS_Stat) {
-        resp = stat(touse, image);
+    else if (strcmp(touse.mtype, "MFS_Stat")) {
+        resp = serverStat(touse, image);
+        touse.rc = resp;
     }
-    else if (touse->mtype == MFS_Write) {
-        resp = write(touse, image);
+    else if (strcmp(touse.mtype, "MFS_Write")) {
+        resp = serverWrite(touse, image);
+        touse.rc = resp;
     }
-    else if (touse->mtype == MFS_Read) {
-        resp = read(touse, image);
+    else if (strcmp(touse.mtype, "MFS_Read")) {
+        resp = serverRead(touse, image);
+        touse.rc = resp;
     }
-    else if (touse->mtype == MFS_Unlink) {
-        resp = unlink(touse, image);
+    else if (strcmp(touse.mtype, "MFS_Unlink")) {
+        resp = serverUnlink(touse, image);
+        touse.rc = resp;
     }
-    else if (touse->mtype == MFS_Shutdown) {
-        resp = shutdown(touse, image);
+    else if (strcmp(touse.mtype, "MFS_Shutdown")) {
+        resp = serverShutdown(touse, image);
+        touse.rc = resp;
     }
     else {
-        touse->rc = -1;
+        touse.rc = -1;
     }
     
 	
@@ -110,32 +145,3 @@ int main(int argc, char *argv[]) {
     return 0; 
 
 }
-
-
-
-int lookup (message_t message, void* image) {
-
-    
-    return 0;
-}
-
-int stat (message_t message, void* image) {
-    return 0;
-}
-
-int write (message_t message, void* image) {
-    return 0;
-}
-
-int read (message_t message, void* image) {
-    return 0;
-}
-
-int unlink (message_t message, void* image) {
-    return 0;
-}
-
-int shutdown (message_t message, void* image) {
-    return 0;
-}
-

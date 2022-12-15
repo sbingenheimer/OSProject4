@@ -1,6 +1,8 @@
 #ifndef __message_h__
 #define __message_h__
 
+#include "mfs.h"
+
 #define MFS_INIT (1)
 #define MFS_LOOKUP (2)
 #define MFS_STAT (3)
@@ -12,13 +14,17 @@
 
 
 typedef struct {
-    int mtype; // message type from above
+    char * mtype; // message type from above
     int rc;    // return code
     char *response; //buffer for any response
     // put more here ...
     int inum;
     char * lookupName;
-    MFS_STAT_t *statStruct;
+    MFS_Stat_t *statStruct;
+    int offset;
+    int nbytes;
+    int type;
+    char *message;
 
 } message_t;
 
