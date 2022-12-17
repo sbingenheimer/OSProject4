@@ -21,7 +21,7 @@ char * imageIn;
 
 
 int serverLookup (message_t message, void* image) {
-
+    
     
     return 0;
 }
@@ -56,7 +56,8 @@ int main(int argc, char *argv[]) {
 
    
     port = argv[1];
-    int portInt = sscanf(port, "%d", &portInt);
+    int portInt = atoi(port);
+
     imageIn = argv[2];
 
 
@@ -75,13 +76,15 @@ int main(int argc, char *argv[]) {
     int image_size = (int) buff.st_size;
 
     void *image = mmap(NULL, image_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    assert(image != MAP_FAILED);
+    if (image == MAP_FAILED) {
+        printf("image does not exist\n");
+    }
 
 
    // so here we wait for messages
 
     sd = UDP_Open(portInt); //not sure what to do here exactly. not sure what the port should be 
-    assert(sd > -1);
+    //assert(sd > -1);
     while (1) {
 	struct sockaddr_in addr;
 	printf("server:: waiting...\n");
@@ -126,7 +129,7 @@ int main(int argc, char *argv[]) {
 
     }
 
-    
+    close(fd);
     return 0; 
     
 }
