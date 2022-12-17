@@ -21,11 +21,13 @@ typedef struct {
     int inum;
     char * lookupName;
     MFS_Stat_t *statStruct;
+
     int offset;
     int nbytes;
     int type;
     char *message;
-
+    //ADDED THIS
+    MFS_DirEnt_t *dirStruct;
 } message_t;
 
 #endif // __message_h__
