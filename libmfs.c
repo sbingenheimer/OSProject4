@@ -30,7 +30,7 @@ int sendAndRecieve (message_t message){
     FD_ZERO(&rfds);
     FD_SET(sd, &rfds);
 
-    tv.tv_sec = 30;
+    tv.tv_sec = 5;
     tv.tv_usec = 0;
     
     rc = UDP_Write(sd, &addrSnd, (char*) &message, BUFFER_SIZE);
@@ -64,7 +64,7 @@ int sendAndRecieve (message_t message){
 int MFS_Init(char *hostname, int port) {
     
     //Think this is how you initialize???
-    sd = UDP_Open(0);
+    sd = UDP_Open(20000);
     if (sd < 0) {
         return -1;
     }
