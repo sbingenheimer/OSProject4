@@ -77,7 +77,7 @@ int serverLookup (message_t message, void* image) {
         if(flagHit){
             break;
         }
-    }
+    
 
     return inumVal;
 }
