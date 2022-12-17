@@ -13,7 +13,7 @@
 int sd;
 message_t touse;
 struct stat buff;
-long port;
+char * port;
 char * imageIn;
 
 // GET CALLS FROM MFS AND DO OPERATIONS THEN RETURN
@@ -54,11 +54,11 @@ int main(int argc, char *argv[]) {
 
     //Think we have to make the file image here first then create the socket and wait for messages
 
+   
+    port = argv[1];
+    int portInt = sscanf(port, "%d", &portInt);
+    imageIn = argv[2];
 
-    char* p;
-    port = strtol(argv[0], &p, 10);
-    if (*p != '\0')
-    imageIn = argv[1];
 
     int fd = open(imageIn, O_RDWR);
     if (fd < 0) {
@@ -80,32 +80,15 @@ int main(int argc, char *argv[]) {
 
    // so here we wait for messages
 
-    sd = UDP_Open(port); //not sure what to do here exactly. not sure what the port should be 
+    sd = UDP_Open(portInt); //not sure what to do here exactly. not sure what the port should be 
     assert(sd > -1);
     while (1) {
 	struct sockaddr_in addr;
-	char message[BUFFER_SIZE];
 	printf("server:: waiting...\n");
 	int rc = UDP_Read(sd, &addr, (char*)&touse, BUFFER_SIZE);
-	printf("server:: read message [size:%d contents:(%s)]\n", rc, message);
+	printf("server:: read message [size:%d contents]\n", rc);
 
-    int fd = open(image, O_RDWR);
-    if (fd < 0) {
-        return -1;
-    }
-
-    //getting file information 
-    struct stat buff;
-    int rd = fstat(fd, &buff);
-    if (rd < 0) {
-        return -1;
-    }
-
-    int image_size = (int) buff.st_size;
-
-    void *image = mmap(NULL, image_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    assert(image != MAP_FAILED);
-
+   
     int resp;
 
     if (strcmp(touse.mtype, "MFS_Lookup")) {
@@ -142,6 +125,8 @@ int main(int argc, char *argv[]) {
 
 
     }
-    return 0; 
 
+    
+    return 0; 
+    
 }
