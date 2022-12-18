@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <sys/select.h>
 #include <string.h>
+#include <time.h>
+
 
 #define BUFFER_SIZE (4096)
 message_t ret;
@@ -23,35 +25,35 @@ struct timeval tv;
 int sendAndRecieve (message_t message){
 
     int rc;
-    int selret = 0;
+    //int selret = 0;
 
-    while (selret == 0){
+    //while (selret == 0){
 
-    FD_ZERO(&rfds);
-    FD_SET(sd, &rfds);
+   // FD_ZERO(&rfds);
+    //FD_SET(sd, &rfds);
 
-    tv.tv_sec = 5;
-    tv.tv_usec = 0;
+    //tv.tv_sec = 5;
+    //tv.tv_usec = 0;
     
     rc = UDP_Write(sd, &addrSnd, (char*) &message, BUFFER_SIZE);
-    if (rc != -1) {
-        selret = select(sd+1, &rfds, NULL, NULL, &tv);
-        if (selret == -1){
-            perror("select()");
-        }
-        else if(selret != 0){
+    
+        //selret = select(sd+1, &rfds, NULL, NULL, &tv);
+        //if (selret == -1){
+        //    perror("select()");
+        //}
+        //else if(selret != 0){
              rc = UDP_Read(sd, &addrRcv, (char*) &ret , BUFFER_SIZE);
-             printf("client:: got reply [size:%d contents:(%s)\n", rc, message.response);
+             //printf("client:: got reply [size:%d contents:(%s)\n", rc, message.response);
              return rc;
-        }
-        else {
-            printf("no response in 30 seconds");
-        }
+        //}
+       // else {
+        //s    printf("no response in 30 seconds");
+      //  }
 
-    }
+    
 
 
-    }
+    
 
     return -1;
 }
@@ -63,8 +65,17 @@ int sendAndRecieve (message_t message){
 
 int MFS_Init(char *hostname, int port) {
     
+    int MIN_PORT = 20000;
+    int MAX_PORT = 40000;
+
+    srand(time(0));
+    int port_num = (rand() % (MAX_PORT - MIN_PORT) + MIN_PORT);
+
+    // Bind random client port number
+    int sd = UDP_Open(port_num);
+    
     //Think this is how you initialize???
-    sd = UDP_Open(20000);
+    sd = UDP_Open(0);
     if (sd < 0) {
         return -1;
     }
@@ -272,4 +283,3 @@ int MFS_Shutdown() {
 
     return -1;
 }
-
