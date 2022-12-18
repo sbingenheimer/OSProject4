@@ -231,6 +231,10 @@ message_t serverRead (message_t message, void* image) {
     return messageReturn;
 }
 
+int serverCreat(message_t message, void* image){
+    return 0;
+}
+
 int serverUnlink (message_t message, void* image) {
     /*
 
@@ -291,9 +295,9 @@ int serverUnlink (message_t message, void* image) {
 }
 
 int serverShutdown (message_t message, void* image) {
-
     exit(0);
-    return 0;
+    printf("test");
+    return -1;
 }
 
 // UDP read and write
@@ -310,9 +314,9 @@ int main(int argc, char *argv[]) {
     imageIn = argv[2];
 
 
-    int fd = open(imageIn, O_RDWR);
+    int fd = open(imageIn, O_RDWR, 0644);
     if (fd < 0) {
-        return -1;
+        exit(0);
     }
 
     //getting file information 
@@ -329,7 +333,7 @@ int main(int argc, char *argv[]) {
         printf("image does not exist\n");
     }
 
-
+    
    // so here we wait for messages
 
     sd = UDP_Open(portInt); //not sure what to do here exactly. not sure what the port should be 
@@ -337,44 +341,52 @@ int main(int argc, char *argv[]) {
     while (1) {
 	struct sockaddr_in addr;
 	printf("server:: waiting...\n");
-	int rc = UDP_Read(sd, &addr, (char*)&touse, BUFFER_SIZE);
-	printf("server:: read message [size:%d contents]\n", rc);
+	int rf = UDP_Read(sd, &addr, (char*)&touse, BUFFER_SIZE);
+	printf("server:: read message [size: contents]\n");
+
+    printf("%d", touse.mtype);
+
 
    
     int resp;
 
-    if (strcmp(touse.mtype, "MFS_Lookup")) {
+    if (touse.mtype == 2) {
         resp = serverLookup(touse, image);
         touse.rc = resp;
     }
-    else if (strcmp(touse.mtype, "MFS_Stat")) {
+    else if (touse.mtype == 3) {
         message_t messageReturn = serverStat(touse, image);
         touse = messageReturn;
     }
-    else if (strcmp(touse.mtype, "MFS_Write")) {
+    else if (touse.mtype == 4) {
         resp = serverWrite(touse, image);
         touse.rc = resp;
     }
-    else if (strcmp(touse.mtype, "MFS_Read")) {
-        message_t messageReturn = serverStat(touse, image);
+    else if (touse.mtype == 5) {
+        message_t messageReturn = serverRead(touse, image);
         touse = messageReturn;
     }
-    else if (strcmp(touse.mtype, "MFS_Unlink")) {
+    else if (touse.mtype == 6) {
+        resp = serverCreat(touse, image);
+        touse.rc = resp;
+    }
+    else if (touse.mtype == 7) {
         resp = serverUnlink(touse, image);
         touse.rc = resp;
     }
-    else if (strcmp(touse.mtype, "MFS_Shutdown")) {
+    else if (touse.mtype == 8) {
+        fsync(fd);
         resp = serverShutdown(touse, image);
         touse.rc = resp;
     }
     else {
         touse.rc = -1;
     }
-    
+    if(rf > 0){ 
 	
-    rc = UDP_Write(sd, &addr, (char *) &touse, BUFFER_SIZE);
+    rf = UDP_Write(sd, &addr, (char *) &touse, BUFFER_SIZE);
 	
-
+    }
 
     }
 
