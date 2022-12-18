@@ -36,15 +36,21 @@ int sendAndRecieve (message_t message){
     //tv.tv_usec = 0;
     
     rc = UDP_Write(sd, &addrSnd, (char*) &message, BUFFER_SIZE);
+    printf("%d", rc);
+    
     
         //selret = select(sd+1, &rfds, NULL, NULL, &tv);
         //if (selret == -1){
         //    perror("select()");
         //}
         //else if(selret != 0){
-             rc = UDP_Read(sd, &addrRcv, (char*) &ret , BUFFER_SIZE);
+            if (rc > 0){
+             rc = UDP_Read(sd, &addrRcv, (char*) &message , BUFFER_SIZE);
              //printf("client:: got reply [size:%d contents:(%s)\n", rc, message.response);
              return rc;
+            }else{
+                return -1;
+            }
         //}
        // else {
         //s    printf("no response in 30 seconds");
@@ -71,11 +77,11 @@ int MFS_Init(char *hostname, int port) {
     srand(time(0));
     int port_num = (rand() % (MAX_PORT - MIN_PORT) + MIN_PORT);
 
+
     // Bind random client port number
-    int sd = UDP_Open(port_num);
+     sd = UDP_Open(port_num);
     
     //Think this is how you initialize???
-    sd = UDP_Open(0);
     if (sd < 0) {
         return -1;
     }
@@ -91,7 +97,7 @@ int MFS_Lookup(int pinum, char *name) {
     // network communication to do the lookup to server
 
     message_t message;
-    message.mtype = "MFS_Lookup";
+    message.mtype = 2;
     message.lookupName = name;
 
     //send to server
@@ -116,7 +122,7 @@ int MFS_Lookup(int pinum, char *name) {
 int MFS_Stat(int inum, MFS_Stat_t *m) {
 
     message_t message;
-    message.mtype = "MFS_Stat";
+    message.mtype = 3;
     message.inum = inum;
 
     //send to server
@@ -146,7 +152,7 @@ int MFS_Write(int inum, char *buffer, int offset, int nbytes) {
     }
 
     message_t message;
-    message.mtype = "MFS_Write";
+    message.mtype = 4;
     message.inum = inum;
     message.offset = offset;
     message.nbytes = nbytes;
@@ -179,7 +185,7 @@ int MFS_Read(int inum, char *buffer, int offset, int nbytes) {
     }
     
     message_t message;
-    message.mtype = "MFS_Read";
+    message.mtype = 5;
     message.inum = inum;
     message.offset = offset;
     message.nbytes = nbytes;
@@ -207,7 +213,7 @@ int MFS_Read(int inum, char *buffer, int offset, int nbytes) {
 int MFS_Creat(int pinum, int type, char *name) {
 
     message_t message;
-    message.mtype = "MFS_Read";
+    message.mtype = 6;
     message.inum = pinum;
     message.type = type;
     message.message = name;
@@ -235,7 +241,7 @@ int MFS_Creat(int pinum, int type, char *name) {
 int MFS_Unlink(int pinum, char *name) {
 
     message_t message;
-    message.mtype = "MFS_Unlink";
+    message.mtype = 7;
     message.inum = pinum;
     message.message = name;
     //memcpy(message.message, name, sizeof(char));
@@ -263,10 +269,11 @@ int MFS_Unlink(int pinum, char *name) {
 int MFS_Shutdown() {
 
     message_t message;
-    message.mtype = "MFS_Shutdown";
+    message.mtype = 8;
 
     //send to server
     int rc = sendAndRecieve(message);
+   
 
     //if successful then get the return code from server
     if (rc == 0){
