@@ -14,7 +14,7 @@
 
 
 typedef struct {
-    char * mtype; // message type from above
+    int mtype; // message type from above
     int rc;    // return code
     char *response; //buffer for any response
     // put more here ...
