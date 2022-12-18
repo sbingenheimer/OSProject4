@@ -15,9 +15,6 @@ server: server.o udp.o
 mkfs.o: mkfs.c
 	gcc -fPIC -g -c -Wall mkfs.c
 
-client.o: client.c
-	gcc -fPIC -g -c -Wall client.c
-
 clean:
 	rm -f server.o udp.o libmfs.so libmfs.o mkfs.o server
 	
