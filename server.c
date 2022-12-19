@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
+#include <signal.h>
 
 
 #include "udp.h"
@@ -14,6 +15,7 @@
 
 #define BUFFER_SIZE (4096)
 int sd;
+int fd;
 message_t touse;
 struct stat buff;
 char * port;
@@ -31,8 +33,8 @@ Right now my belief is that current logic is right
 
 //  *********ADDED MFS_DirEnt_t to message.h ************
 int serverLookup (message_t message, void* image) {
-    /*
-    super_t *organizedImage = (super_t *) image;
+    
+   super_t *organizedImage = (super_t *) image;
     inode_t *inode_table = image + (organizedImage->inode_region_addr * UFS_BLOCK_SIZE);
     inode_t *data_table = image + (organizedImage->data_region_addr * UFS_BLOCK_SIZE);
     inode_t *root_inode = inode_table;
@@ -41,51 +43,46 @@ int serverLookup (message_t message, void* image) {
     dir_ent_t *curr_dir;
     int flagHit = 0;
     int inumVal = -1;
-    //MAYBE A CONCERN: cannot directly check if the located inum is a directory or file
-    //because we are looping starting from the root_dir which is a directory entry not a inode entry.
+    //lseek(fd, root_inode + message.inum*sizeof(inode_t), SEEK_SET);
+    //read(fd, &currinode, sizeof(inode_t));
 
-    //another note, are there subdirectories that we need to look into from the root dir
-
-    currinode = root_inode + sizeof(inode_t)*message.inum;
-    
-    if(currinode->type == NULL){
+    if (message.inum < 0 || message.inum >= organizedImage->num_inodes){
         return -1;
     }
+    //int parent = root_inode->direct[message.inum];
+
+
+    currinode = root_inode + sizeof(inode_t)*message.inum;  
+
+    printf("%d", currinode->type);
     
-            //Loops through the curr inode dirs
-        size_t sizeDirect = (int)(sizeof(currinode->direct)/sizeof(currinode->direct[0]));
-        for(int j = 0; j<sizeDirect; j++){    
+    if(root_inode->type == 1){
+        return -1;
+    }
+    //Loops through the curr inode dirs
+        for(int j = 0; j<DIRECT_PTRS; j++){    
             curr_dir = image + (currinode->direct[j] * UFS_BLOCK_SIZE);
             //logic could be wrong here****************Deleted this logic in later sections but kept it for reference in case need to add in all other functions
-            size_t currdirectsize = (int)(sizeof(curr_dir)/sizeof(curr_dir[0]));
-            for(int k = 0; k<fcurrdirectsize; k++){
-                
+            int currdirectsize = (int)(sizeof(curr_dir));
+            for(int k = 0; k<currdirectsize; k++){
                 //if the name from our message and the dir we are looking at, return the inum
-                if(curr_dir[k].name == message.lookupName){
-                    
+                if(strcmp(curr_dir[k].name, message.lookupName) == 0 && curr_dir[k].inum != -1){
                     inumVal = curr_dir[k].inum;
                     flagHit = 1;
                     break;
-                }
-                    
+                }     
             }
 
             if(flagHit){
                 break;
             }
         }   
-        
-    
-
     return inumVal;
-    */
-    return 0;
+    
 }
 
 message_t serverStat (message_t message, void* image) {
-    message_t messageReturn = message;
-    /*
-    message_t messageReturn = message;
+   message_t messageReturn = message;
     messageReturn.rc = -1;
 
     super_t *organizedImage = (super_t *) image;
@@ -93,45 +90,18 @@ message_t serverStat (message_t message, void* image) {
     //inode_t *data_table = image + (organizedImage->data_region_addr * UFS_BLOCK_SIZE);
     inode_t *root_inode = inode_table;
     //inode_t *root_data = data_table;
-    dir_ent_t *curr_dir;
-    //inode_t *curr_table;
-    //int inumVal = -1;
-    int flaghit = 0;
 
     inode_t *currinode = root_inode + sizeof(inode_t)*message.inum;
     
-    if(currinode->type == NULL){
+    if(currinode->type != 0 && currinode->type != 1){
         return messageReturn;
     }
-    
-    int sizeDirect = (int)(sizeof(currinode->direct)/sizeof(currinode->direct[0]));
-    for(int i = 0; i<sizeDirect; i++){
-        
-        curr_dir = image + (currinode->direct[i] * UFS_BLOCK_SIZE);
-        int currDirectSize = (int)(sizeof(curr_dir)/sizeof(curr_dir[0]));
-        //logic could be wrong here****************
-        for(int j = 0; j<currDirectSize; j++){
-            
-            //if the name from our message and the dir we are looking at, return the inum
-            if(curr_dir[i].name == message.lookupName){
-               flaghit = 1;
-                break;
-            }
-                
-        }
-        //logic could be wrong here****************
-        if(flaghit){
-            messageReturn.statStruct->type = currinode->type;
-            messageReturn.statStruct->size = currinode->size; 
-            messageReturn.rc = 0;
-            break;
-        }   
-        
-    }
+    messageReturn.statStruct->type = currinode->type;
+    messageReturn.statStruct->size = currinode->size; 
+    messageReturn.rc = 0;
     
     return messageReturn;
-    */
-    return messageReturn;
+
 }
 
 int serverWrite (message_t message, void* image) {
@@ -232,7 +202,74 @@ message_t serverRead (message_t message, void* image) {
 }
 
 int serverCreat(message_t message, void* image){
-    return 0;
+    super_t *organizedImage = (super_t *) image;
+    inode_t *inode_table = image + (organizedImage->inode_region_addr * UFS_BLOCK_SIZE);
+    inode_t *data_table = image + (organizedImage->data_region_addr * UFS_BLOCK_SIZE);
+    inode_t *root_inode = inode_table;
+    inode_t *currinode;
+    dir_ent_t *curr_dir;
+    int flagHit = 0;
+    int namematch = 0;
+    //int inumVal = -1;
+    dir_ent_t opendir;
+    dir_ent_t addfile;
+    dir_ent_t adddir;
+
+
+
+    if (message.inum < 0 || message.inum > organizedImage->num_inodes){
+        return -1;
+    }
+    
+
+    currinode = root_inode + sizeof(inode_t)*message.inum;
+
+    if(currinode->type == 1 || currinode->type == 0){
+        return -1;
+    }
+    
+            //Loops through the curr inode dirs
+        size_t sizeDirect = (int)(sizeof(currinode->direct)/sizeof(currinode->direct[0]));
+        for(int j = 0; j<sizeDirect; j++){    
+            curr_dir = image + (currinode->direct[j] * UFS_BLOCK_SIZE);
+            //logic could be wrong here****************Deleted this logic in later sections but kept it for reference in case need to add in all other functions
+            size_t currdirectsize = (int)(sizeof(curr_dir));
+            for(int k = 0; k<currdirectsize; k++){
+                
+                //if the name from our message and the dir we are looking at, return the inum
+                if(curr_dir[k].inum == -1){
+                    opendir = curr_dir[k];
+                    flagHit = 1;
+                    break;
+                }else if(strcmp(curr_dir[k].name, message.message)){
+                    namematch = 1;
+                }
+                    
+            }
+        }   
+
+        if (namematch == 1) {
+            return 0;
+        }
+        /*
+        else if (flagHit == 1){
+            if (message.type == 0){
+                inode_t *newInode;
+                newInode->type = 0;
+                newInode->direct[0] = adddir;
+                int sd = pwrite()
+            }
+            else if (message.type == 1){
+                inode_t *newInode;
+                addfile.name = message.message;
+                newInode->type = 1;
+                newInode->direct[0] = addfile;
+
+            }
+            */
+        
+
+    return -1;
 }
 
 int serverUnlink (message_t message, void* image) {
@@ -296,7 +333,6 @@ int serverUnlink (message_t message, void* image) {
 
 int serverShutdown (message_t message, void* image) {
     exit(0);
-    printf("test");
     return -1;
 }
 
@@ -344,8 +380,6 @@ int main(int argc, char *argv[]) {
 	int rf = UDP_Read(sd, &addr, (char*)&touse, BUFFER_SIZE);
 	printf("server:: read message [size: contents]\n");
 
-    printf("%d", touse.mtype);
-
 
    
     int resp;
@@ -375,6 +409,7 @@ int main(int argc, char *argv[]) {
         touse.rc = resp;
     }
     else if (touse.mtype == 8) {
+        UDP_Close(sd);
         fsync(fd);
         resp = serverShutdown(touse, image);
         touse.rc = resp;
