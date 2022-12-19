@@ -14,8 +14,8 @@ message_t ret;
 int sd;
 int fc;
 struct sockaddr_in addrSnd, addrRcv;
-fd_set rfds;
-struct timeval tv;
+//fd_set rfds;
+//struct timeval tv;
 
 
 //should prob make a send function so we dont have to rewrite every method when sending to and from client and server
@@ -25,41 +25,15 @@ struct timeval tv;
 int sendAndRecieve (message_t message){
 
     int rc;
-    //int selret = 0;
-
-    //while (selret == 0){
-
-   // FD_ZERO(&rfds);
-    //FD_SET(sd, &rfds);
-
-    //tv.tv_sec = 5;
-    //tv.tv_usec = 0;
-    
     rc = UDP_Write(sd, &addrSnd, (char*) &message, BUFFER_SIZE);
-    printf("%d", rc);
-    
-    
-        //selret = select(sd+1, &rfds, NULL, NULL, &tv);
-        //if (selret == -1){
-        //    perror("select()");
-        //}
-        //else if(selret != 0){
-            if (rc > 0){
-             rc = UDP_Read(sd, &addrRcv, (char*) &message , BUFFER_SIZE);
-             //printf("client:: got reply [size:%d contents:(%s)\n", rc, message.response);
+ 
+            if (rc == 0 && message.mtype != 8){
+             rc = UDP_Read(sd, &addrRcv, (char*) &ret , BUFFER_SIZE);
+             printf("client:: got reply [size: contents:()\n");
              return rc;
             }else{
-                return -1;
+                return 0;
             }
-        //}
-       // else {
-        //s    printf("no response in 30 seconds");
-      //  }
-
-    
-
-
-    
 
     return -1;
 }
@@ -212,17 +186,30 @@ int MFS_Read(int inum, char *buffer, int offset, int nbytes) {
 
 int MFS_Creat(int pinum, int type, char *name) {
 
+    int count = 0;
+    for (int i = 0; name[i]; i++){
+        count++;
+    }
+    if (count > 28){
+        return -1;
+    }
+
+    if (pinum < 0){
+        return -1;
+    }
+
     message_t message;
     message.mtype = 6;
     message.inum = pinum;
     message.type = type;
     message.message = name;
-    //memcpy(message.message, name, sizeof(char));
+    //memcpy(message.message, name, sizeof(char))
 
     //send to server
     int rc = sendAndRecieve(message);
 
     //if successful then get the return code from server
+    
     if (rc == 0){
         message_t resp = ret;
 
@@ -273,7 +260,9 @@ int MFS_Shutdown() {
 
     //send to server
     int rc = sendAndRecieve(message);
-   
+
+
+    UDP_Close(sd);
 
     //if successful then get the return code from server
     if (rc == 0){
@@ -290,3 +279,4 @@ int MFS_Shutdown() {
 
     return -1;
 }
+
